@@ -6,7 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "shurph/trusty32-latex-cyr"
-  #config.vm.box = "trusty32-latex-cyr-local"
+  config.vm.box_version = "0.0.1"
 
   config.vm.provider :virtualbox do |vb|
       vb.customize ["modifyvm", :id, "--memory", "512"]

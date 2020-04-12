@@ -40,3 +40,5 @@
 !document_list.pdf
 
 !docs/*
+.DS_Store
+scalable-cyrfonts-tex-shurph_4.16_all.deb
