@@ -8,20 +8,20 @@
 % Зачем: назначение оплаты для программиста и ведущего программиста.
 \FPeval{\rankOneSalaryPerHours}{11.5}
 \FPeval{\rankTwoSalaryPerHours}{8.32}
-\FPeval{\bonusRate}{1.3}
+\FPeval{\bonusRate}{1.35}
 
 % Зачем: вычисление основной заработной платы.
 \FPeval{\rankOneSalary}{clip(\rankOneSalaryPerHours * \devTimeInHours * \bonusRate)}
 \FPeval{\rankTwoSalary}{clip(\rankTwoSalaryPerHours * \devTimeInHours * \bonusRate)}
 \FPeval{\totalSalary}{clip(\rankOneSalary + \rankTwoSalary)}
 
-% Зачем: вычисление дополнительной заработной платы в размере 10%.
-\FPeval{\addedSalaryNormative}{10}
+% Зачем: вычисление дополнительной заработной платы в размере 35%.
+\FPeval{\addedSalaryNormative}{35}
 \FPeval{\addedSalaryExact}{\totalSalary * \addedSalaryNormative / 100}
 \FPround{\addedSalary}{\addedSalaryExact}{2}
 
-% Зачем: вычисление отчислений в фонд социальной защиты и страхование в размере 34.6%.
-\FPeval{\socialCoverageNormative}{0.6}
+% Зачем: вычисление отчислений в фонд социальной защиты и страхование в размере 35%.
+\FPeval{\socialCoverageNormative}{1}
 \FPeval{\socialProtectionNormative}{34}
 \FPeval{\socialNormative}{clip(\socialCoverageNormative + \socialProtectionNormative)}
 \FPeval{\socialNormativeCostExact}{(\totalSalary + \addedSalary) * \socialNormative / 100}
@@ -54,7 +54,7 @@
 \FPeval{\salaryAddedCalcedExact}{(1 + (\salaryAddedNormative) / 100)}
 \FPround{\salaryAddedCalced}{\salaryAddedCalcedExact}{2}
 
-\FPeval{\salaryDeductedNormative}{34.6}
+\FPeval{\salaryDeductedNormative}{35}
 \FPeval{\salaryDeductedCalcedExact}{(1 + (\salaryDeductedNormative) / 100)}
 \FPround{\salaryDeductedCalced}{\salaryDeductedCalcedExact}{2}
 
@@ -66,7 +66,7 @@
 \FPround{\costSavings}{\costSavingsExact}{2}
 
 % Зачем: вычисление прироста чистой прибыли.
-\FPeval{\profitIncExact}{\costSavings * (1 - 3 / 12)}
+\FPeval{\profitIncExact}{\costSavings * (1 - 6 / 12)}
 \FPround{\profitInc}{\profitIncExact}{2}
 
 \FPeval{\incomeTaxRate}{18}
@@ -74,8 +74,8 @@
 \FPround{\profitIncFullYear}{\profitIncFullYearExact}{2}
 
 % Зачем: вычисление показателей экономической эффективности.
-\FPeval{\economicsEffectIndexPercent}{13}
-\FPeval{\economicsEffectIndex}{0.13}
+\FPeval{\economicsEffectIndexPercent}{12}
+\FPeval{\economicsEffectIndex}{0.12}
 
 \FPeval{\economicsEffectIndexOneExact}{clip((1 + \economicsEffectIndex) ^ (1 - 1))}
 \FPround{\economicsEffectIndexOne}{\economicsEffectIndexOneExact}{2}
@@ -104,7 +104,7 @@
 
 % === Конец вычислений ===
 
-\section{ТЕХНИКО\hyphЭКОНОМИЧЕСКОЕ ОБОСНОВАНИЕ}
+\section{Технико\hyphэкономическое обоснование}
 \label{sec:economics}
 
 \subsection{Краткая характеристика программного продукта}
@@ -133,7 +133,7 @@
 \subsection{Расчет затрат на разработку продукта}
 \label{sub:economics:dev_cost}
 
-Для разработки данного программного модуля необходимо привлечь два специалиста: программист, разрабатывающий серверную часть и программист, разрабатывающий сайт.
+Для разработки данного программного модуля необходимо привлечь двух специалиста: программист, разрабатывающий серверную часть и программист, разрабатывающий сайт.
 Длительность разработки составляет три месяца или $ \num{\devTimeInHours} $ часов рабочего времени.
 
 Основная заработная плата исполнителей проекта на конкретное программное обеспечение определяется по следующей формуле:
@@ -143,20 +143,18 @@
     \sum^{n}_{i = 1}
       \text{Т}_{\text{чi}} \cdot
       \text{Т}_{\text{ч}} \cdot
-      \text{Ф}_{\text{эi}} \cdot
-      \text{К}_{i} \text{\,,}
+      \text{Ф}_{\text{эi}} \text{\,,}
 \end{equation}
 \begin{explanation}
   где & $ \text{n} $ & количество исполнителей, занятых разработкой продукта; \\
       & $ \text{Т}_{\text{чi}} $ & часовая тарифная ставка $ i $-го исполнителя,~р.; \\
       & $ \text{Т}_{\text{ч}} $ & количество часов работы в день,~ч.; \\
       & $ \text{Ф}_{\text{эi}} $ & эффективный фонд рабочего времени $ i $-го исполнителя,~дн.; \\
-      & $ \text{К}_{i} $ & коэффициент премирования.
 \end{explanation}
 
 В настоящий момент часовая тарифная ставка программиста, разрабатывающего серверную часть составляет $ \SI{\rankOneSalaryPerHours}{\text{р.}} $ и программиста, разрабатывающего сайт, действующая в компании, составляет $ \SI{\rankTwoSalaryPerHours}{\text{р.}} $.
 Учитывая длительность разработки проекта и месячные тарифные ставки исполнителей, можем рассчитать основную заработную плату.
-Подставив известные значения в формулу~(\ref{eq:sub:economics:dev_cost:total_salary}) и приняв коэффициент премирования $ \text{К}_{i} = \num{\bonusRate} $, вычислим основную заработную плату.
+Подставив известные значения в формулу~(\ref{eq:sub:economics:dev_cost:total_salary}), вычислим основную заработную плату.
 Данный расчет представлен в таблице~\ref{tbl:sub:economics:dev_cost:total_salary_calc}.
 
 \begin{table}[ht]
@@ -165,34 +163,29 @@
   \begin{tabular}{| >{\centering}m{0.19\textwidth}
                   | >{\centering}m{0.16\textwidth}
                   | >{\centering}m{0.20\textwidth}
-                  | >{\centering}m{0.18\textwidth}
                   | >{\centering\arraybackslash}m{0.15\textwidth}|}
     \hline
     Исполнитель
       & Часовая тарифная ставка,~р.
       & Плановый фонд рабочего времени,~ч.
-      & Коэффициент премирования
       & Основная заработная плата,~р. \\
     \hline
     Программист, разрабатывающий сайт
       & $ \num{\rankTwoSalaryPerHours} $
       & $ \num{\devTimeInHours} $
-      & $ \num{\bonusRate} $
       & $ \num{\rankTwoSalary} $\\
     \hline
     Программист, разрабатывающий серверную часть
       & $ \num{\rankOneSalaryPerHours} $
       & $ \num{\devTimeInHours} $
-      & $ \num{\bonusRate} $
       & $ \num{\rankOneSalary} $ \\
     \hline
-    Итого & - & - & - & $ \num{\totalSalary} $ \\
+    Итого & - & - & $ \num{\totalSalary} $ \\
     \hline
   \end{tabular}
 \end{table}
 
-Дополнительная заработная плата исполнителей проекта, задействованных в разработке данного продукта, включает выплаты, предусмотренные законодательством о труде.
-Она определяется по нормативу в процентах от основной заработной платы и вычисляется по следующей формуле:
+Дополнительная заработная плата исполнителей проекта, задействованных в разработке данного продукта вычисляется по следующей формуле:
 \begin{equation}
   \label{eq:sub:economics:dev_cost:added_salary}
   \text{З}_{\text{д}} =
@@ -256,8 +249,7 @@
   \SI{\machineTimeCost}{\text{р.}}
 \end{equation*}
 
-Статья <<накладные расходы>> учитывает расходы, необходимые для содержания аппарата управления, вспомогательных хозяйств и опытных производств, а также расходы на общехозяйственные нужды.
-Данная статья затрат рассчитывается по нормативу от основной заработной платы и вычисляется по формуле:
+Статья <<накладные расходы>> рассчитывается по нормативу от основной заработной платы и вычисляется по формуле:
 \begin{equation}
   \label{eq:sub:economics:dev_cost:overhead_cost}
   \text{Р}_{\text{н}} =
@@ -315,7 +307,7 @@
   \SI{\softwareSupportCost}{\text{р.}}
 \end{equation*}
 
-Полная себестоимость создания программного обеспечения включает сумму затрат на разработку, сопровождение и адаптацию, и вычисляется по следующей формуле:
+Полная себестоимость создания программного обеспечения для организации продажи вещей в аренду включает сумму затрат на разработку, сопровождение и адаптацию, и вычисляется по следующей формуле:
 \begin{equation}
   \label{eq:sub:economics:dev_cost:base_cost}
   \text{С}_{\text{п}} = \text{С}_{\text{р}} + \text{Р}_{\text{са}} \text{\,.}
@@ -334,17 +326,16 @@
 \label{sub:economics:result_eval}
 
 Результатом в сфере использования программного продукта является прирост чистой прибыли.
-Прирост прибыли обеспечивается за счет увеличения количества сделок.
+Прирост прибыли обеспечивается за счет автоматизации процесса сдачи и покупки вещей в аренду, облегчения поиска товаров на одной площадке и как следствие, увеличения количества сделок.
 Экономия затрат использования программного модуля в расчете на объем выполняемых работ определяется по формуле:
 \begin{equation}
   \label{eq:sub:economics:result_eval:cost_savings}
   \text{Э}_{\text{з}} =
-    \text{К}_{\text{пр}} \cdot (\text{t}_{\text{c}} - \text{t}_{\text{н}}) \cdot \text{Т}_{\text{ч}} \cdot \text{N}_{\text{п}} \cdot
+    (\text{t}_{\text{c}} - \text{t}_{\text{н}}) \cdot \text{Т}_{\text{ч}} \cdot \text{N}_{\text{п}} \cdot
       (1 + \frac{\text{Н}_{\text{д}}}{\num{100\%}}) \cdot (1 + \frac{\text{Н}_{\text{но}}}{\num{100\%}}) \text{\,,}
 \end{equation}
 \begin{explanation}
-  где & $ \text{К}_{\text{пр}} $ & коэффициент премий; \\
-      & $ \text{t}_{\text{c}}, \text{t}_{\text{н}} $ & трудоемкость выполнения работы до и после внедрения программного продукта,~нормо\hyphчас; \\
+  где & $ \text{t}_{\text{c}}, \text{t}_{\text{н}} $ & трудоемкость выполнения работы до и после внедрения программного продукта,~нормо\hyphчас; \\
       & $ \text{Т}_{\text{ч}} $ & часовая тарифная ставка, соответствующая разряду выполняемых работ,~р./ч.; \\
       & $ \text{N}_{\text{п}} $ & плановый объем работ,~шт.; \\
       & $ \text{Н}_{\text{д}} $ & норматив дополнительной заработной платы,~\%; \\
@@ -355,10 +346,10 @@
 В месяц сдается порядка $ \num{\patientsAdmittedCount} $ товаров.
 
 Согласно действующему законодательству, норматив дополнительной заработной платы составляет $ \num{\salaryAddedNormative\%} $, норматив отчислений от заработной платы, включаемых в себестоимость "--- $ \num{\salaryDeductedNormative\%} $.
-Учитывая данные нормативы, а также приняв коэффициент премий $ \text{К}_{\text{пр}} = \num{\bonusRate} $ и подставив ранее известные значения в формулу~(\ref{eq:sub:economics:result_eval:cost_savings}), вычислим прирост прибыли за счет использования данного программного продукта:
+Учитывая данные нормативы и подставив ранее известные значения в формулу~(\ref{eq:sub:economics:result_eval:cost_savings}), вычислим прирост прибыли за счет использования данного программного продукта:
 \begin{equation*}
   \text{Э}_{\text{з}} =
-    \num{\bonusRate} \cdot (\num{\laborBefore} - \num{\laborAfter}) \cdot \num{\rankOneSalaryPerHours} \cdot \num{\patientsAdmittedCount} \cdot \num{\salaryAddedCalced} \cdot \num{\salaryDeductedCalced} =
+   (\num{\laborBefore} - \num{\laborAfter}) \cdot \num{\rankOneSalaryPerHours} \cdot \num{\patientsAdmittedCount} \cdot \num{\salaryAddedCalced} \cdot \num{\salaryDeductedCalced} =
   \SI{\costSavings}{\text{р.}}
 \end{equation*}
 
@@ -373,14 +364,14 @@
       & $ \text{Н}_{\text{п}} $ & ставка налога на прибыль,~$ \% $.
 \end{explanation}
 
-Разработка данного программного модуля начата в 2020 году, внедрение планируется во втором квартале 2020 года, поэтому программное приложение может получить уже в 2020 году 75\% прибыли:
+Разработка данного программного модуля начата в 2020 году, внедрение планируется в третьем квартале 2020 года, поэтому программное приложение может получить уже в 2020 году 50\% прибыли:
 \begin{equation*}
   \text{П}_{\text{ч1}} =
-    \num{\costSavings} \cdot (1 - \frac{\num{3}}{\num{12}}) =
+    \num{\costSavings} \cdot (1 - \frac{\num{6}}{\num{12}}) =
   \SI{\profitInc}{\text{р.}}
 \end{equation*}
 
-Приняв ставку налога на прибыль $ \text{Н}_{\text{п}} = \num{\incomeTaxRate\%} $ и подставив ранее вычисленные значения в формулу~(\ref{eq:sub:economics:result_eval:profit_increase}), получаем прирост чистой прибыли за счет экономии материальных ресурсов составит в последующие годы:
+При ставке налога на прибыль $ \text{Н}_{\text{п}} = \num{\incomeTaxRate\%} $ и подставив ранее вычисленные значения в формулу~(\ref{eq:sub:economics:result_eval:profit_increase}), получаем прирост чистой прибыли за счет экономии материальных ресурсов составит в последующие годы:
 \begin{equation*}
   \Delta\text{П}_{\text{ч}} =
     \num{\costSavings} - \frac{\num{\costSavings} \times \num{\incomeTaxRate\%}}{\num{100\%}} =
@@ -462,13 +453,13 @@
       & -
       & - \\
     \hline
-    \raggedright{5. Всего инвестиций}
+    \raggedright{6. Всего инвестиций}
       & р.
       & $ \num{\baseCost} $
       & -
       & - \\
     \hline
-    \raggedright{6. То же с учетом времени}
+    \raggedright{7. То же с учетом времени}
       & р.
       & $ \num{\baseCost} $
       & -
@@ -476,13 +467,13 @@
     \hline
     \raggedright{\textbf{Экономический эффект}} & & & & \\
     \hline
-    \raggedright{7. Чистый приведенный доход}
+    \raggedright{8. Чистый приведенный доход}
       & р.
       & $ \num{\chddIndexOne} $
       & $ \num{\profitIncFullYearWithTwoIndex} $
       & $ \num{\profitIncFullYearWithThreeIndex} $ \\
     \hline
-    \raggedright{8. То же нарастающим итогом}
+    \raggedright{9. То же нарастающим итогом}
       & р.
       & $ \num{\chddIndexOne} $
       & $ \num{\chddIndexTwo} $
