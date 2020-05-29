@@ -79,7 +79,8 @@
 
 \subsection{Проектирование базы данных БД}
 
-\subsubsection{Инфологическое проектирование БД}
+\subsubsection{Инфологическое проектирование БД}\hfill
+
 Первостепенной моделью данного проекта является пользователь, который при регистрации указывает свои контактные данные и краткую информацию о себе.
 
 При регистрации пользователь выбирает себе аватар.
@@ -113,197 +114,213 @@
     \item BasketGood - сущность, предствляющая товар, лежащий в корзине пользовтаеля.
 \end{itemize}
 
-Выделив сущности, можно составить связи между ними:
-\bigbreak
+Выделив сущности, можно составить связи между ними в таблице 3.1.
 
-\begin{tabular}{ | l | l | l | }
-\hline
-Родительская сущность & Дочерняя сущность & Тип связи  \\ \hline
-User & UserAvatar & один-к-одному \\ \hline
-User & Basket & один-к-одному \\ \hline
-User & Good & один-ко-многим \\ \hline
-Good & GoodsAvatar & один-ко-многим \\ \hline
-Good & Tag & многие-ко-многим \\ \hline
-User & Payment & один-ко-многим \\ \hline
-User & Address & один-ко-многим \\ \hline
-User & Order & один-ко-многим \\ \hline
-User & Review & многие-ко-многим \\ \hline
-Basket & Good & многие-ко-многим \\ \hline
-Order & Good & многие-ко-многим  \\ \hline
-Payment & Order & один-ко-многим \\ \hline
-Address & Order & один-ко-многим \\ \hline
-\hline
-\end{tabular}
-
-\subsubsection{Даталогическое проектирование БД}
-На основании выделенных сущностей и связей. Ниже приведены таблицы, популяризированные атрибутами.
-
-
-User:
-
-\begin{tabular}{ | l | l | l | }
+\begin{table}[ht]
+    \caption{Описание связей сущностей}
+    \begin{tabular}{ | l | l | l | }
     \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    name & varchar(120) & ФИО пользователя \\ \hline
-    phone & varchar(20) & Номер телефона пользователя \\ \hline
-    email & varchar(30) & Электронная почта пользователя \\ \hline
-    created\_at & datetime & Дата создания пользователя \\
+    Родительская сущность & Дочерняя сущность & Тип связи  \\ \hline
+    User & UserAvatar & один-к-одному \\ \hline
+    User & Basket & один-к-одному \\ \hline
+    User & Good & один-ко-многим \\ \hline
+    Good & GoodsAvatar & один-ко-многим \\ \hline
+    Good & Tag & многие-ко-многим \\ \hline
+    User & Payment & один-ко-многим \\ \hline
+    User & Address & один-ко-многим \\ \hline
+    User & Order & один-ко-многим \\ \hline
+    User & Review & многие-ко-многим \\ \hline
+    Basket & Good & многие-ко-многим \\ \hline
+    Order & Good & многие-ко-многим  \\ \hline
+    Payment & Order & один-ко-многим \\ \hline
+    Address & Order & один-ко-многим \\
     \hline
-\end{tabular}
+    \end{tabular}
+\end{table}
 
-Good:
+\subsubsection{Даталогическое проектирование БД}\hfill
 
-\begin{tabular}{ | l | l | p{6cm} | }
+На основании выделенных сущностей и связей. Ниже приведены таблицы, популяризированные атрибутами (таблицы 3.2-3.15).
+
+\begin{table}[ht]
+    \caption{Описание сущности User}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        name & varchar(120) & ФИО пользователя \\ \hline
+        phone & varchar(20) & Номер телефона пользователя \\ \hline
+        email & varchar(30) & Электронная почта пользователя \\ \hline
+        fcm\_token & varchar(100) & Токен для отправки push уведомлений \\ \hline
+        created\_at & datetime & Дата создания пользователя \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Good}
+    \begin{tabular}{ | l | l | p{6cm} | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        name & varchar(120) & название товара \\ \hline
+        condition & int & состояние товара \\ \hline
+        description & varchar(120) & краткое описание товара \\ \hline
+        can\_be\_purchased & int & поле, идтицируещее возможность выкупа товара \\ \hline
+        price\_per\_hour & int & цена за час аренды \\ \hline
+        price\_per\_day & int & цена за сутки аренды \\ \hline
+        own\_deliver & int & поле, индицируещее возможность доставки арендатором\\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности UserAvatar}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        url & varchar(120) & url-адрес на фотография \\ \hline
+        user & int & указатель на пользователя \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности GoodAvatar}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        url & varchar(120) & url-адрес на фотография \\ \hline
+        good & int & указатель на товар \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Tag}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        name & varchar(120) & название категории \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности TagGood}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        tag & int & указатель на категорию \\ \hline
+        good & int & указатель на товар \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Basket}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        user & int & указатель на пользователя \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности BasketGood}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        basket & int & указатель на корзину \\ \hline
+        good & int & указатель на товар \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Payment}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        user & int & указатель на пользователя \\ \hline
+        card\_number & varchar(30) & номер карты \\ \hline
+        cvv\_code & varchar(3) & cvv код карты \\ \hline
+        date\_expire & varchar(10) & срок годности карты \\ \hline
+        cardholder\_name & varchar(50) & имя держателя карты \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Address}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        user & int & указатель на пользователя \\ \hline
+        city & varchar(20) & Город в адресе \\ \hline
+        street & varchar(20) & улица в адресе \\ \hline
+        building & varchar(10) & номер здания  \\ \hline
+        appartament & int & номер квартиры \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Review}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        sender & int & указатель на пользователя, оставившего отзыв \\ \hline
+        receiver & int & указатель на пользователя, получивший отзыв \\ \hline
+        text & varchar(120) & текстовый отзыв \\ \hline
+        mark & int & оценка в отзыве \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности GoodOrder}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        good & int & указатель на товар \\ \hline
+        order & int & указатель на заказ \\ \hline
     \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    name & varchar(120) & название товара \\ \hline
-    condition & int & состояние товара \\ \hline
-    description & varchar(120) & краткое описание товара \\ \hline
-    can\_be\_purchased & int & поле, идтицируещее возможность выкупа товара \\ \hline
-    price\_per\_hour & int & цена за час аренды \\ \hline
-    price\_per\_day & int & цена за сутки аренды \\ \hline
-    own\_deliver & int & поле, индицируещее возможность доставки арендатором\\
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+    \caption{Описание сущности Order}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        user & int & указатель указатель на арендатора \\ \hline
+        address & int & указатель на адрес доставки \\ \hline
+        payment & int & указатель на способ оплаты \\ \hline
+        created\_at & datetime & дата создания заказа  \\ \hline
+        start\_use\_date & datetime & начальная дата аренды товара \\ \hline
+        end\_use\_date & datetime & дата сдачи товраа обратно \\ \ hline
+        payed & smallint & поле, индицирующее оплату товара \\
     \hline
-\end{tabular}
+    \end{tabular}
+\end{table}
 
-UserAvatar:
-
-\begin{tabular}{ | l | l | l | }
+\begin{table}[ht]
+    \caption{Описание сущности BasketGood}
+    \begin{tabular}{ | l | l | l | }
+        \hline
+        Атрибут & Тип данных & Описание  \\ \hline
+        good & int & указатель указатель на арендатора \\ \hline
+        basket & int & указатель на корзину пользователя  \\ \hline
+        rate\_type & int & выбор типа арендного времени \\ \hline
+        time & int & количество часов/дней товара в аренде \\
     \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    url & varchar(120) & url-адрес на фотография \\ \hline
-    user & int & указатель на пользователя \\
-    \hline
-\end{tabular}
-
-GoodAvatar:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    url & varchar(120) & url-адрес на фотография \\ \hline
-    good & int & указатель на товар \\
-    \hline
-\end{tabular}
-
-Tag:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    name & varchar(120) & название категории \\
-    \hline
-\end{tabular}
-
-TagGood:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    tag & int & указатель на категорию \\ \hline
-    good & int & указатель на товар \\
-    \hline
-\end{tabular}
-
-Basket:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    user & int & указатель на пользователя \\
-    \hline
-\end{tabular}
-
-BasketGood:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    basket & int & указатель на корзину \\ \hline
-    good & int & указатель на товар \\
-    \hline
-\end{tabular}
-
-Payment:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    user & int & указатель на пользователя \\ \hline
-    card\_number & varchar(30) & номер карты \\ \hline
-    cvv\_code & varchar(3) & cvv код карты \\ \hline
-    date\_expire & varchar(10) & срок годности карты \\ \hline
-    cardholder\_name & varchar(50) & имя держателя карты \\
-    \hline
-\end{tabular}
-
-Address:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    user & int & указатель на пользователя \\ \hline
-    city & varchar(20) & Город в адресе \\ \hline
-    street & varchar(20) & улица в адресе \\ \hline
-    building & varchar(10) & номер здания  \\ \hline
-    appartament & int & номер квартиры \\
-    \hline
-\end{tabular}
-\bigbreak
-
-Review:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    sender & int & указатель на пользователя, оставившего отзыв \\ \hline
-    receiver & int & указатель на пользователя, получивший отзыв \\ \hline
-    text & varchar(120) & текстовый отзыв \\ \hline
-    mark & int & оценка в отзыве \\
-    \hline
-\end{tabular}
-\bigbreak
-
-GoodOrder
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    good & int & указатель на товар \\ \hline
-    order & int & указатель на заказ \\ \hline
-\hline
-\end{tabular}
-
-Order:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    user & int & указатель указатель на арендатора \\ \hline
-    address & int & указатель на адрес доставки \\ \hline
-    payment & int & указатель на способ оплаты \\ \hline
-    created\_at & datetime & дата создания заказа  \\ \hline
-    start\_use\_date & datetime & начальная дата аренды товара \\ \hline
-    end\_use\_date & datetime & дата сдачи товраа обратно \\ \ hline
-    payed & smallint & поле, индицирующее оплату товара \\
-\hline
-\end{tabular}
-
-BasketGood:
-
-\begin{tabular}{ | l | l | l | }
-    \hline
-    Атрибут & Тип данных & Описание  \\ \hline
-    good & int & указатель указатель на арендатора \\ \hline
-    basket & int & указатель на корзину пользователя  \\ \hline
-    rate\_type & int & выбор типа арендного времени \\ \hline
-    time & int & количество часов/дней товара в аренде \\
-\hline
-\end{tabular}
+    \end{tabular}
+\end{table}
 
 Исходя из выделенных сущностей и их связей, была построенная соответствующая ER-диаграмма базы данных, представленная в приложении А.1.
 
-\subsubsection{Нормализация БД}
+\subsubsection{Нормализация БД}\hfill
+
 При построении баз данных необходимо следовать определённым правилам.
 Эти правила получили название нормализации баз данных[14].
 Нормализация базы данных является не обязательной, но эти правила существенно упростят работу по составлению запросов и способствуют улучшению масштабируемости.
@@ -315,17 +332,20 @@ BasketGood:
     \item Отсутствие избыточности. Данные в таблице не дублируются, что существенно снижает её размер.
 \end{itemize}
 
-Результатом проверки спректированной базы данных на соответсвие нормальной форме является таблица.
+Результатом проверки спректированной базы данных на соответсвие нормальной форме является таблица 3.16.
 В описании критериев второй и терьей нормальных форм были опущены критерии о выполнении предыдущих нормальных форм.
 
-\begin{tabular}{ | p{3cm} | p{6cm} | p{3cm} | }
-    \hline
-    Нормальная форма  & Критерий соответствия нормально форме & Соответствие нормальной форме \\ \hline
-    Первая нормальная форма & Все значения в ячейках должны быть атомарными, то есть содержать ровно одно неделимое значение, а не список из нескольких значений. & Да  \\ \hline
-    Вторая нормальная форма & Все поля в таблице должны полностью зависеть от первичного ключа целиком, а не от его части & Да  \\ \hline
-    Третья нормальная форма & Значения полей должны зависеть только от первичного ключа, а не от других полей & Да  \\
-    \hline
-\end{tabular}
+\begin{table}[ht]
+    \caption{Результаты проверки спроектированной базы данных на соответствие номральным формам}
+    \begin{tabular}{ | p{3cm} | p{6cm} | p{3cm} | }
+        \hline
+        Нормальная форма  & Критерий соответствия нормально форме & Соответствие нормальной форме \\ \hline
+        Первая нормальная форма & Все значения в ячейках должны быть атомарными, то есть содержать ровно одно неделимое значение, а не список из нескольких значений. & Да  \\ \hline
+        Вторая нормальная форма & Все поля в таблице должны полностью зависеть от первичного ключа целиком, а не от его части & Да  \\ \hline
+        Третья нормальная форма & Значения полей должны зависеть только от первичного ключа, а не от других полей & Да  \\
+        \hline
+    \end{tabular}
+\end{table}
 
 В результате была спреоктирована база данных, удовлетворяющая номальной форме.
 
@@ -435,7 +455,8 @@ BasketGood:
 Но существуют проверенные практики.
 И начиная разрабатывать приложение на React, стоит хотя бы с ними ознакомится, что спроектировать структуру, а не наращивать поступательно, по мере необходимости, что неизбежно приводит к big ball of mud, в большей или меньшей степени.
 
-\subsubsection{Категоризации компонентов}
+
+\subsubsection{Категоризации компонентов}\hfill
 
 \begin{itemize}
     \item Первый тип компонента, с которым создается “Hello, World” или компонент-компонент.
@@ -462,7 +483,7 @@ BasketGood:
     В таком случае стоит задуматься остается ли он при этом контейнером и может стоит подобрать другую категорию компонента.
 \end{itemize}
 
-\subsubsection{Маршрутизация и глобальное состояние}
+\subsubsection{Маршрутизация и глобальное состояние}\hfill
 
 При разработке больших приложений невозможно заранее спланировать устройство всех необходимых моделей.
 Более того, по мере того, как размер приложения увеличивается, использование техники внедрения редьюсеров помогает сэкономить большой объём человеко-часов.
@@ -492,7 +513,7 @@ BasketGood:
 Новой системой маршрутизации, после завершения её настройки, можно пользоваться посредством Redux.
 Так, навигация в приложении может быть реализована путём отправки действий.
 
-\subsubsection{Организация асинхронных запросов}
+\subsubsection{Организация асинхронных запросов}\hfill
 
 Redux-saga[18] это библиотека нацеленная делать сайд-эффекты проще и лучше путем работы с сагами.
 Саги это дизайн паттерн, который пришел из мира распределенных транзакций, где сага управляет процессами, которые необходимо выполнять транзакционным способом, сохраняя состояние выполнения и компенсируя неудачные процессы.
