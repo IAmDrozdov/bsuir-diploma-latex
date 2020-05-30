@@ -207,14 +207,22 @@
     \label{fire:admin}
 \end{figure}
 
-Далее данный файл используется для инициализации проекта (см рисунок \ref{fire:server:init}).
+Далее данный файл используется для инициализации проекта (см листинг 4.1).
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[scale=0.5]{init_server.png}
-    \caption{ Инициализация Firebase на серверной части }
-    \label{fire:server:init}
-\end{figure}
+Листинг 4.1 – Инициализация Firebase на серверной части
+\begin{lstlisting}
+    import os
+
+    import firebase_admin
+
+    from firebase_admin import credentials
+
+    firebase_admin.initialize_app(
+        credentials.Certificate(
+            os.environ["FIREBASE_SERVICE_FILE"]
+        )
+    )
+\end{lstlisting}
 
 После чего в разделах ниже будет добавлен и использован функционал данной библиотеки для реализации отправки уведомлений и организации аунтентификации по номеру телефона.
 
@@ -222,14 +230,35 @@
 В целях соблюдения концепции <<Двенадцать факторов>>, а так же облегчения развертывания проекта, инициализация проекта клиентской части происходит с помощью переменных окруженя.
 Как и для серверной части, данные доступа приложения можно получить в панели администратора Firebase.
 
-Для того, чтобы облегчить процесс использования сервисов Firebase на клиентской части, был написан сервис Firebase(см рисунок \ref{fire:front:init}).
+Для того, чтобы облегчить процесс использования сервисов Firebase на клиентской части, был написан сервис Firebase(см листинг 4.2).
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[scale=0.5]{firebase_front_init.png}
-    \caption{ Инициализация Firebase на клиентской части }
-    \label{fire:front:init}
-\end{figure}
+Листинг 4.2 – Инициализация Firebase на клиентской части
+\begin{lstlisting}
+    import app from 'firebase/app';
+
+    const firebaseConfig = {
+      apiKey: process.env.FIREBASE_API_KEY,
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+      databaseURL: process.env.FIREBASE_DB_URL,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.FIREBASE_MSG_SENDER_ID,
+      appId: process.env.FIREBASE_APP_ID,
+      measurementId: process.env.MEASUREMENT_ID
+    };
+
+    class Firebase {
+      constructor() {
+        app.initializeApp(firebaseConfig);
+      }
+
+    }
+
+    const firebase = new Firebase();
+
+    export default firebase;
+
+\end{lstlisting}
 
 Сервис представляет собой синглтон, который предоставляет доступ к инициализированному приложению.
 В разделах ниже в него будут добавлены необходимые функции.
@@ -259,18 +288,38 @@ Firebase обеспечивает службы серверной части, п
 
 Прежде чем войти в систему пользователей с их телефонов, необходимо настроить средство проверки рекапчи.
 Firebase использует reCAPTCHA для предотвращения злоупотреблений.
-Таким образов для интеграции Firebase Authentication с помощью номера телефона необходимо создать каптчу(см рисунок \ref{fire:captcha}(а)).
-И так же организовать проверку с помощью клиентской библиотеки Firebase(см рисунок \ref{fire:captcha}(б)).
+Таким образов для интеграции Firebase Authentication с помощью номера телефона необходимо создать каптчу(см листинг 4.3).
+И так же организовать проверку с помощью клиентской библиотеки Firebase(см листинг 4.4).
 
 
-\begin{figure}[h]
-    \centering
-    \subfloat[]{\includegraphics[scale=0.8]{firebase_recaptcha.png}} \\
-    \subfloat[]{\includegraphics[scale=0.8]{firebase_auth_code.png}}
-    \caption{ (a) - Интеграция reCAPTCHA в форму аунтентификации, (б) - Интеграция функционала для работы с аунтентификацией по номеру телефона }
-    \label{fire:captcha}
-\end{figure}
+Листинг 4.3 – Интеграция reCAPTCHA в форму аунтентификации
+\begin{lstlisting}
+    useEffect(() => {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+          callback: () => setCodeSent(true),
+          size: 'invisible'
+        });
+      }, []);
+\end{lstlisting}
 
+Листинг 4.4 – Интеграция функционала для работы с аунтентификацией по номеру телефона
+\begin{lstlisting}
+
+class Firebase {
+    constructor() {
+      app.initializeApp(firebaseConfig);
+
+      this.auth = app.auth();
+    }
+
+    sendCode = (phone, appVerifier) => this.auth.signInWithPhoneNumber(phone, appVerifier);
+
+    verifyCode = (confirmationResult, code) => confirmationResult.confirm(code);
+
+    signOut = () => this.auth.signOut();
+  }
+
+\end{lstlisting}
 
 После успешной проверки OTP-кода Firebase генерирует IdToken, котрый представляет собой JWT токен.
 Данный токер вместе с номером телефона отправляется на серверную часть для получения токена авторизации.
@@ -278,13 +327,51 @@ Firebase использует reCAPTCHA для предотвращения зл
 Для обработки процесса аунтентификации пользователя на серверной части была реализована проверка IdToken с помощью серверной библиотеки Firebase.
 
 
-Был написан сериализатор(см рисунок \ref{server:seri}), который средствами серверной библиотеки Firebase распаковывает IdToken и проверяет, соответствие номера телефона запроса с номером телефона в токене.
-\begin{figure}[h!]
-    \centering
-    \includegraphics[clip, scale=0.8]{firebase_backend_token.png}
-    \caption{ Сериализатор запроса аутентификации пользователя }
-    \label{server:seri}
-\end{figure}
+Был написан сериализатор(см листинг 4.5), который средствами серверной библиотеки Firebase распаковывает IdToken и проверяет, соответствие номера телефона запроса с номером телефона в токене.
+
+Листинг 4.5 – Сериализатор проверки код и номера телефона
+\begin{lstlisting}
+from django.utils.translation import ugettext_lazy as _
+from phonenumber_field.serializerfields import PhoneNumberField
+
+from rest_framework import serializers, exceptions
+from utils.firebase.helpers import get_id_token
+
+
+class FireBaseIDTokenSerializer(serializers.Serializer):
+    fcm_token = serializers.CharField(
+        allow_null=True, max_length=200
+        )
+    phone_number = PhoneNumberField()
+    verification_code = serializers.CharField()
+
+    def validate_verification_code(self, value):
+        try:
+            decoded_token = get_id_token(value)
+        except ValueError:
+            raise exceptions.ValidationError(
+                _("Token expired!"), code="token-expired"
+            )
+        except Exception:
+            # TODO: Add logging
+            raise exceptions.ValidationError(
+                _("Invalid code!"), code="token-invalid"
+            )
+        return decoded_token
+
+    def validate_phone_number(self, value):
+        return value.as_e164
+
+    def validate(self, attrs):
+        decoded_token = attrs["verification_code"]
+        if decoded_token["phone_number"] != attrs["phone_number"]:
+            raise exceptions.ValidationError(
+                _("Invalid combination of phone number and code!")
+            )
+
+        return attrs
+
+\end{lstlisting}
 
 При неуспешной обработке токена сервер возвращает 40X ответ клиентской части с описанием ошибки.
 При успешной обработке токена сервер генерирует токен авторизации и возвращает его в ответе.
@@ -293,15 +380,80 @@ Firebase использует reCAPTCHA для предотвращения зл
 
 Firebase Cloud Messaging (FCM) - это кросс-платформенное решение для обмена сообщениями, которое позволяет  отправлять сообщения без каких-либо затрат.
 
-На серверной части была написана утилита для отправки уведомлений как одному пользователю, так и многим (см рисунок \ref{server:sendpush}).
+На серверной части была написана утилита для отправки уведомлений как одному пользователю, так и многим (см листинг 4.6-4.8).
 
-\begin{figure}[h]
-    \centering
-    \subfloat[]{\includegraphics[scale=0.8]{server_send_multiple.png}} \\
-    \subfloat[]{\includegraphics[scale=0.8]{server_send_multiple.png}}
-    \caption{ (a) - Отправка уведомления одному пользователю, (б) - Отправка уведомления нескольким пользователям }
-    \label{server:sendpush}
-\end{figure}
+
+Листинг 4.6 – Функция создания конфигурационного файла для отправки уведомлений
+\begin{lstlisting}
+    def generate_push_configs(
+        title: str = None, body: str = None, url: str = ""
+        ) -> messaging.WebpushConfig:
+
+    url_site = f"https://{os.environ["SSL_DOMAIN"]}"
+    redirect_to = f"{url_site}/{url}" if url else None
+
+    webpush_config = messaging.WebpushConfig(
+        notification=messaging.WebpushNotification(
+            title=title,
+            body=body,
+        ),
+        fcm_options=messaging.WebpushFcmOptions(
+            link=redirect_to
+        )
+    )
+    return webpush_config
+\end{lstlisting}
+
+Листинг 4.7 – Отправка уведомления одному пользователю
+\begin{lstlisting}
+    def send_push(
+        user_id: int, collection: str, title: str = None,
+        body: str = None, url: str = ""
+        ) -> None:
+    token = User.objects.get(pk=user_id).fcm_token
+    if not token:
+        return
+
+    webpush_config = generate_push_configs(title, body, url)
+
+    message = messaging.Message(
+        webpush=webpush_config,
+        token=token
+    )
+    try:
+        messaging.send(message)
+    except messaging.ApiCallError as e:
+        logging.debug(
+            f"Could send push in firebase. Error: {e}"
+            )
+\end{lstlisting}
+
+Листинг 4.8 – Отправка уведомления нескольким пользователям
+\begin{lstlisting}
+    def send_multiple_push(
+        users_ids: list, collection: str, title: str = None,
+        body: str = None, url: str = ""
+        ) -> None:
+    tokens = (
+        User.objects
+        .filter(pk__in=users_ids)
+        .values_list("fcm_token", flat=True)
+    )
+    filtered_tokens = [token for token in tokens if token]
+
+    webpush_config = generate_push_configs(title, body)
+
+    multicast_message = messaging.MulticastMessage(
+        tokens=filtered_tokens,
+        webpush=webpush_config,
+    )
+    try:
+        messaging.send_multicast(multicast_message)
+    except messaging.ApiCallError as e:
+        logging.debug(
+            f"Could send multicast push in firebase. Error: {e}"
+            )
+\end{lstlisting}
 
 Токен для отправки уведомлений обновляется при аутентификации пользователя в системе.
 Во избежании ошибок при отправке уведомлений была добавлена проверка на наличие FCM токена у пользователя.
@@ -315,29 +467,74 @@ Firebase Cloud Messaging (FCM) - это кросс-платформенное р
 \end{itemize}
 
 При том изобилии компонент, которое у имеется, решением для разработки было использование docker-compose.
-Таким образом был написан <<docker-compose.yml>> файл(см рисунок \ref{composefile}).
+Таким образом был написан <<docker-compose.yml>> файл(см листинг 4.9).
 
-\begin{figure}[h!]
-    \centering
-    \includegraphics[clip, scale=0.8]{doc-compose.png}
-    \caption{ Docker-compose файл }
-    \label{composefile}
-\end{figure}
-docker-compose
+Листинг 4.9 – Docker-compose файл
+\begin{lstlisting}
+    version: "3"
+
+    services:
+    db:
+        image: postgres
+        ports:
+        - "5432:5432"
+    django:
+        build: ./backend
+        command: bash -c 'python manage.py
+        migrate && python manage.py runserver 0.0.0.0:8000'
+        ports:
+        - "8000:8000"
+        depends_on:
+        - db
+    frontend:
+        build: ./frontend
+        command: npm start
+        volumes:
+        - ./frontend:/app/frontend
+        ports:
+        - "8000:8000"
+\end{lstlisting}
+
 
 Данный файл состоит соответственно из трех сервисов: клиентское приложние, серверное приложение и база данных.
 Стоит обратить внимание, что серверное приложение не может быть запущено, пока не запущена база данных.
 так же клиентское приложение не может быть запущено, пока не запущено серверное приложеие.
 Во избежании увеличения размера файла было решено хранить переменные окружения в образах самих сервисов.
 
-Далее были написаны файлы Dockerfile для клиентского и сервеного приложений(см рисунок \ref{dockerfiles}).
+Далее были написаны файлы Dockerfile для клиентского и сервеного приложений(см листинг 4.10-4.11).
 
-\begin{figure}[h]
-    \centering
-    \subfloat[]{\includegraphics[scale=0.9]{doc-front.png}} \\
-    \subfloat[]{\includegraphics[scale=0.8]{doc-back.png}}
-    \caption{ (a) - Dockerfile клиентского приложения, (б) - Dockerfile серверного приложения }
-    \label{dockerfiles}
-\end{figure}
+
+Листинг 4.10 – Dockerfile клиентского приложения
+\begin{lstlisting}
+    FROM node
+
+    ENV PATH /node_modules/.bin:$PATH
+    WORKDIR /usr/src/front
+
+    COPY package.json ./
+    COPY package-lock.json ./
+
+    RUN npm install --silent
+    RUN npm install react-scripts@3.4.1 -g --silent
+
+    COPY . /usr/src/front/
+\end{lstlisting}
+
+Листинг 4.11 – Dockerfile серверного приложения
+\begin{lstlisting}
+    FROM python:3.8.0-alpine
+
+    WORKDIR /usr/src/app
+
+    ENV PYTHONDONTWRITEBYTECODE 1
+    ENV PYTHONUNBUFFERED 1
+
+    RUN pip install --upgrade pip
+    COPY ./requirements.txt /usr/src/app/requirements.txt
+    RUN pip install -r requirements.txt
+
+    COPY . /usr/src/app/
+
+\end{lstlisting}
 
 Таким образом командой <<docker-compose up>> можно запустить проект.
