@@ -312,7 +312,148 @@
     \label{front:struct}
 \end{figure}
 
-В главе про проектирование было
+\subsubsection{Глобальное состояние приложения и асинхронные запросы}\hfill
+Для начала стоит подчеркнуть, что Redux не имеет отношения к React.
+Можно создавать Redux-приложения c помощью React, Angular, Ember, jQuery или обычного JavaScript.
+
+Однако, Redux работает особенно хорошо с такими фреймворками, как React и Deku, потому что они позволяют описать UI как функцию состояния, и, кроме того, Redux умеет менять состояние (state) приложения в ответ на произошедшие экшены (actions).
+
+React байндинг для Redux отделяют презентационные компоненты от компонент-контейнеров.
+Такой подход может облегчить понимание приложения и упростить повторное использование компонентов.
+
+Подход redux предполагает наличие 2х стоставляющих - reducer - функция изменения состояния приложения.
+Обычно, это чистая функция, изменяющая свое состояние в зависимости от входных параметров - actions.
+Action - представляет собой словарь с двумя полями: actionType  и payload.
+В зависимости от actionType redux меняет одну из своих частей состояния.
+
+В листинге 4.5-4.6 приведен пример reducer и actions к состоянию products.
+
+Листинг 4.5 - Reducer состояния products
+\begin{lstlisting}
+    export default (state = {
+    lastRefKey: null,
+    total: 0,
+    items: []
+    }, action) => {
+    switch (action.type) {
+        case GET_PRODUCTS_SUCCESS:
+        return {
+            ...state,
+            lastRefKey: action.payload.lastKey,
+            total: action.payload.total,
+            items: [...state.items, ...action.payload.products]
+        };
+        default:
+        return state;
+    }
+    };
+\end{lstlisting}
+
+Листинг 4.6 - Actions состояния products
+\begin{lstlisting}
+    export const getProducts = lastRef => ({
+    type: GET_PRODUCTS,
+    payload: lastRef
+    });
+
+    export const getProductsSuccess = products => ({
+    type: GET_PRODUCTS_SUCCESS,
+    payload: products
+    });
+
+    export const cancelGetProducts = () => ({
+    type: CANCEL_GET_PRODUCTS
+    });
+
+\end{lstlisting}
+
+По умолчанию, экшены в Redux являются синхронными, что, является проблемой для приложения, которому нужно взаимодействовать с серверным API, или выполнять другие асинхронные действия.
+Однако, Redux предоставляет нам такую штуку как middleware, которая стоит между диспатчом экшена и редюсером.
+Существует две самые популярные middleware библиотеки для асинхронных экшенов в Redux, это — Redux Thunk и Redux Saga.
+В данном проекте была выбрана библиотека redux-saga в виду того, что Sagas предлагает независимое место для обработки всех побочных эффектов.
+А так же поставляется с множеством полезных вспомогательных функций о задачах.
+
+В листинге 4.7 представлена сага, отвечающая ща манипуляции с аунтетификацией пользователя.
+
+Листинг 4.7 - Сага состояния auth
+\begin{lstlisting}
+    function* handleError(e) {
+    yield put(isAuthenticating(false));
+    switch (e.code) {
+        case 'auth/network-request-failed':
+        yield put(setAuthStatus({ success: false, message: 'Network error has occured. Please try again.' }));
+        break;
+        default:
+        yield put(setAuthStatus({ success: false, message: e.message }));
+        break;
+    }
+    }
+
+    function* authSaga({ type, payload }) {
+    switch (type) {
+        case SEND_CODE:
+        try {
+            const confirmationResult = yield call(firebase.sendCode, payload.phone, payload.appVerifier);
+            yield put(sendCodeSuccess(confirmationResult));
+        } catch (e) {
+            yield handleError(e);
+        }
+        break;
+        case VERIFY_CODE:
+        try {
+            const state = yield select();
+            yield call(firebase.verifyCode, state.auth.confirmationResult, payload);
+            yield put(isAuthenticating(false));
+        } catch (e) {
+            yield handleError(e);
+        }
+        break;
+        case SIGNOUT:
+        try {
+            yield call(firebase.signOut);
+            yield put(signOutSuccess());
+            yield put(isAuthenticating(false));
+            yield call(history.push, '/signin');
+        } catch (e) {
+            console.log(e);
+        }
+        break;
+        default:
+    }
+    }
+
+    export default authSaga;
+\end{lstlisting}
+
+Как можно увидеть выше, сага представляет собой reducer, который вместо того, чтобы изменять состояние приложения, вызывает асинхронные действия.
+
+\subsubsection{Разработка интерфейса}\hfill
+
+На примере компоненты Home (см листинг 4.8) будет продемонстрированно подключение Redux состояния и redux-saga к компоненту.
+В данном проекте использовалась библиотека react-redux, которая позволяет с помощью хуков пользоваться redux в компоненте, без подключения ее через функцию connect.
+
+Листинг 4.8 - Подключение компоненты Home к redux
+\begin{lstlisting}
+    import { useSelector, useDispatch } from 'react-redux';
+    import { selectFilter } from 'selectors/selector';
+    const { store } = useSelector(state => ({
+        store: {
+          productsLength: state.products.items.length,
+          products: state.products.items,
+          filter: state.filter,
+          basket: state.basket,
+          lastRefKey: state.products.lastRefKey,
+          totalItems: state.products.total,
+          isLoading: state.app.loading,
+          filteredProducts: selectFilter(state.products.items, state.filter),
+          requestStatus: state.app.requestStatus
+        }
+      }));
+
+      const dispatch = useDispatch();
+      const productListWrapper = useRef(null);
+
+\end{lstlisting}
 
 
 \subsection{Интеграция Firebase}
@@ -332,9 +473,9 @@
     \label{fire:admin}
 \end{figure}
 
-Далее данный файл используется для инициализации проекта (см листинг 4.1).
+Далее данный файл используется для инициализации проекта (см листинг 4.9).
 
-Листинг 4.1 – Инициализация Firebase на серверной части
+Листинг 4.9 – Инициализация Firebase на серверной части
 \begin{lstlisting}
     import os
 
@@ -355,9 +496,9 @@
 В целях соблюдения концепции <<Двенадцать факторов>>, а так же облегчения развертывания проекта, инициализация проекта клиентской части происходит с помощью переменных окруженя.
 Как и для серверной части, данные доступа приложения можно получить в панели администратора Firebase.
 
-Для того, чтобы облегчить процесс использования сервисов Firebase на клиентской части, был написан сервис Firebase(см листинг 4.2).
+Для того, чтобы облегчить процесс использования сервисов Firebase на клиентской части, был написан сервис Firebase(см листинг 4.10).
 
-Листинг 4.2 – Инициализация Firebase на клиентской части
+Листинг 4.10 – Инициализация Firebase на клиентской части
 \begin{lstlisting}
     import app from 'firebase/app';
 
@@ -413,11 +554,11 @@ Firebase обеспечивает службы серверной части, п
 
 Прежде чем войти в систему пользователей с их телефонов, необходимо настроить средство проверки рекапчи.
 Firebase использует reCAPTCHA для предотвращения злоупотреблений.
-Таким образов для интеграции Firebase Authentication с помощью номера телефона необходимо создать каптчу(см листинг 4.3).
-И так же организовать проверку с помощью клиентской библиотеки Firebase(см листинг 4.4).
+Таким образов для интеграции Firebase Authentication с помощью номера телефона необходимо создать каптчу(см листинг 4.11).
+И так же организовать проверку с помощью клиентской библиотеки Firebase(см листинг 4.12).
 
 
-Листинг 4.3 – Интеграция reCAPTCHA в форму аунтентификации
+Листинг 4.11 – Интеграция reCAPTCHA в форму аунтентификации
 \begin{lstlisting}
     useEffect(() => {
         window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
@@ -427,7 +568,7 @@ Firebase использует reCAPTCHA для предотвращения зл
       }, []);
 \end{lstlisting}
 
-Листинг 4.4 – Интеграция функционала для работы с аунтентификацией по номеру телефона
+Листинг 4.12 – Интеграция функционала для работы с аунтентификацией по номеру телефона
 \begin{lstlisting}
 
 class Firebase {
@@ -452,9 +593,9 @@ class Firebase {
 Для обработки процесса аунтентификации пользователя на серверной части была реализована проверка IdToken с помощью серверной библиотеки Firebase.
 
 
-Был написан сериализатор(см листинг 4.5), который средствами серверной библиотеки Firebase распаковывает IdToken и проверяет, соответствие номера телефона запроса с номером телефона в токене.
+Был написан сериализатор(см листинг 4.13), который средствами серверной библиотеки Firebase распаковывает IdToken и проверяет, соответствие номера телефона запроса с номером телефона в токене.
 
-Листинг 4.5 – Сериализатор проверки код и номера телефона
+Листинг 4.13 – Сериализатор проверки код и номера телефона
 \begin{lstlisting}
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.serializerfields import PhoneNumberField
@@ -505,10 +646,10 @@ class FireBaseIDTokenSerializer(serializers.Serializer):
 
 Firebase Cloud Messaging (FCM) - это кросс-платформенное решение для обмена сообщениями, которое позволяет  отправлять сообщения без каких-либо затрат.
 
-На серверной части была написана утилита для отправки уведомлений как одному пользователю, так и многим (см листинг 4.6-4.8).
+На серверной части была написана утилита для отправки уведомлений как одному пользователю, так и многим (см листинг 4.14-4.16).
 
 
-Листинг 4.6 – Функция создания конфигурационного файла для отправки уведомлений
+Листинг 4.14 – Функция создания конфигурационного файла для отправки уведомлений
 \begin{lstlisting}
     def generate_push_configs(
         title: str = None, body: str = None, url: str = ""
@@ -529,7 +670,7 @@ Firebase Cloud Messaging (FCM) - это кросс-платформенное р
     return webpush_config
 \end{lstlisting}
 
-Листинг 4.7 – Отправка уведомления одному пользователю
+Листинг 4.15 – Отправка уведомления одному пользователю
 \begin{lstlisting}
     def send_push(
         user_id: int, collection: str, title: str = None,
@@ -553,7 +694,7 @@ Firebase Cloud Messaging (FCM) - это кросс-платформенное р
             )
 \end{lstlisting}
 
-Листинг 4.8 – Отправка уведомления нескольким пользователям
+Листинг 4.16 – Отправка уведомления нескольким пользователям
 \begin{lstlisting}
     def send_multiple_push(
         users_ids: list, collection: str, title: str = None,
@@ -592,9 +733,9 @@ Firebase Cloud Messaging (FCM) - это кросс-платформенное р
 \end{itemize}
 
 При том изобилии компонент, которое у имеется, решением для разработки было использование docker-compose.
-Таким образом был написан <<docker-compose.yml>> файл(см листинг 4.9).
+Таким образом был написан <<docker-compose.yml>> файл(см листинг 4.17).
 
-Листинг 4.9 – Docker-compose файл
+Листинг 4.17 – Docker-compose файл
 \begin{lstlisting}
     version: "3"
 
@@ -626,10 +767,10 @@ Firebase Cloud Messaging (FCM) - это кросс-платформенное р
 так же клиентское приложение не может быть запущено, пока не запущено серверное приложеие.
 Во избежании увеличения размера файла было решено хранить переменные окружения в образах самих сервисов.
 
-Далее были написаны файлы Dockerfile для клиентского и сервеного приложений(см листинг 4.10-4.11).
+Далее были написаны файлы Dockerfile для клиентского и сервеного приложений(см листинг 4.18-4.19).
 
 
-Листинг 4.10 – Dockerfile клиентского приложения
+Листинг 4.18 – Dockerfile клиентского приложения
 \begin{lstlisting}
     FROM node
 
@@ -645,7 +786,7 @@ Firebase Cloud Messaging (FCM) - это кросс-платформенное р
     COPY . /usr/src/front/
 \end{lstlisting}
 
-Листинг 4.11 – Dockerfile серверного приложения
+Листинг 4.19 – Dockerfile серверного приложения
 \begin{lstlisting}
     FROM python:3.8.0-alpine
 

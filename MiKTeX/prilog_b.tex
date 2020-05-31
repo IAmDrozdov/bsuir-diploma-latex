@@ -1,2 +1,427 @@
 \sectioncentered*{Приложение Б}
 \addcontentsline{toc}{section}{Приложение Б Исходный код клиентского приложения}
+\centerline{\bfseries (обязательно)}
+
+\centerline{\bfseries Исходный код клиентского приложения}
+
+\begin{lstlisting}
+const { store, persistor } = configureStore();
+const AppRoot = () => (
+  <StrictMode>
+    <Provider store={store}>
+      <PersistGate loading={<Preloader />}
+          persistor={persistor}
+      >
+        <AppRouter />
+      </PersistGate>
+    </Provider>
+  </StrictMode>
+);
+
+if (window.navigator.onLine) {
+  // Render the preloader on initial load
+  render(<Preloader />, document.getElementById('app'));
+
+  firebase.auth.onAuthStateChanged((user) => {
+    if (user) {
+      store.dispatch(onAuthStateSuccess(user));
+    } else {
+      store.dispatch(onAuthStateFail('Failed to authenticate'));
+    }
+
+    // then render the app after checking the auth state
+    render(<AppRoot/>, document.getElementById('app'));
+  });
+} else {
+  render((
+    <div className="loader">
+      <h2>:( No internet connection.</h2>
+    </div>
+  ), document.getElementById('app'));
+}
+import {
+  createStore,
+  applyMiddleware,
+  compose
+} from 'redux';
+import { persistStore, persistCombineReducers } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+import createSagaMiddleware from 'redux-saga';
+import rootReducer from 'reducers';
+import rootSaga from 'sagas/rootSaga';
+
+const sagaMiddleware = createSagaMiddleware();
+const composeEnhancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+const authPersistConfig = {
+  key: 'root',
+  storage,
+  whitelist: ['auth', 'profile', 'basket', 'checkout']
+};
+
+export default () => {
+  const store = createStore(
+    persistCombineReducers(authPersistConfig, rootReducer),
+    composeEnhancer(applyMiddleware(sagaMiddleware))
+  );
+  const persistor = persistStore(store);
+  sagaMiddleware.run(rootSaga);
+  return { store, persistor };
+};
+export const selectFilter = (products, filter) => {
+  if (!products || products.length === 0) return [];
+
+  const keyword = filter.keyword.toLowerCase();
+
+  return products.filter((product) => {
+    const isInRange = filter.maxPrice ? (product.price >= filter.minPrice && product.price <= filter.maxPrice) : true;
+    const matchKeyword = product.keywords ? product.keywords.includes(keyword) : true;
+    const matchName = product.name ? product.name.toLowerCase().includes(keyword) : true;
+    const matchDescription = product.description ? product.description.toLowerCase().includes(keyword) : true;
+    const matchBrand = product.brand ? product.brand.toLowerCase().includes(filter.brand) : true;
+
+    return ((matchKeyword || matchName || matchDescription) && matchBrand && isInRange);
+  }).sort((a, b) => {
+    if (filter.sortBy === 'name-desc') {
+      return a.name < b.name ? 1 : -1;
+    } if (filter.sortBy === 'name-asc') {
+      return a.name > b.name ? 1 : -1;
+    } if (filter.sortBy === 'price-desc') {
+      return a.price < b.price ? 1 : -1;
+    } if (filter.sortBy === 'price-asc') {
+      return a.price > b.price ? 1 : -1;
+    }
+  });
+};
+
+// Select product with highest price
+export const selectMax = (products) => {
+  if (!products || products.length === 0) return 0;
+
+  let high = products[0];
+
+  for (let i = 0; i < products.length; i++) {
+    if (products[i].price > high.price) {
+      high = products[i];
+    }
+  }
+
+  return Math.floor(high.price);
+};
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectFilter } from 'selectors/selector';
+
+import ProductList from 'components/product/ProductList';
+import ProductItem from 'components/product/ProductItem';
+import ProductAppliedFilters from 'components/product/ProductAppliedFilters';
+import Modal from 'components/ui/Modal';
+import Boundary from 'components/ui/Boundary';
+import ProductModalDetails from 'components/product/ProductModalDetails';
+import Header from './Header';
+
+const Home = () => {
+  const [isOpenModal, setModalOpen] = useState(false);
+  const [productSelected, setProductSelected] = useState(null);
+  const [columnCount, setColumnCount] = useState(6);
+
+  const { store } = useSelector(state => ({
+    store: {
+      productsLength: state.products.items.length,
+      products: state.products.items,
+      filter: state.filter,
+      basket: state.basket,
+      lastRefKey: state.products.lastRefKey,
+      totalItems: state.products.total,
+      isLoading: state.app.loading,
+      filteredProducts: selectFilter(state.products.items, state.filter),
+      requestStatus: state.app.requestStatus
+    }
+  }));
+
+  const dispatch = useDispatch();
+  const productListWrapper = useRef(null);
+
+  const onProductsLengthChanged = () => {
+    const width = window.screen.width - 250; // minus 250px padding
+
+    setColumnCount(Math.floor(width / 160));
+    if ((columnCount >= store.filteredProducts.length) && store.filteredProducts.length !== 0) {
+      setColumnCount(store.filteredProducts.length);
+    }
+  };
+
+  useEffect(() => {
+    onProductsLengthChanged();
+  }, [store.filteredProducts]);
+
+  const onClickProduct = product => setProductSelected(product);
+  const foundOnBasket = id => !!store.basket.find(item => item.id === id);
+  const onOpenModal = () => setModalOpen(true);
+  const onCloseModal = () => setModalOpen(false);
+
+  return (
+    <>
+      <section className="product-list-wrapper">
+        {!store.requestStatus && (
+          <div className="product-list-header">
+            <Header
+                dispatch={dispatch}
+                filter={store.filter}
+                filteredProductsLength={store.filteredProducts.length}
+                isLoading={store.isLoading}
+                products={store.products}
+                productsLength={store.productsLength}
+            />
+          </div>
+        )}
+        <ProductAppliedFilters filter={store.filter}/>
+        <Boundary>
+          <ProductList
+              dispatch={dispatch}
+              filteredProductsLength={store.filteredProducts.length}
+              foundOnBasket={foundOnBasket}
+              isLoading={store.isLoading}
+              lastRefKey={store.lastRefKey}
+              productsLength={store.productsLength}
+              requestStatus={store.requestStatus}
+              totalItems={store.totalItems}
+          >
+            <Modal isOpen={isOpenModal}
+                onRequestClose={onCloseModal}
+            >
+              <ProductModalDetails
+                  dispatch={dispatch}
+                  foundOnBasket={foundOnBasket}
+                  product={productSelected}
+              />
+              <button
+                  className="modal-close-button button-muted button-small"
+                  onClick={onCloseModal}
+              >
+                X
+              </button>
+            </Modal>
+            <div
+                className="product-list"
+                ref={productListWrapper}
+                style={{ gridTemplateColumns: `repeat(${columnCount}, 160px)` }}
+            >
+              {store.filteredProducts.length === 0 ? new Array(14).fill({}).map((product, index) => (
+                <ProductItem
+                    foundOnBasket={foundOnBasket}
+                    key={`product-skeleton ${index}`}
+                    product={product}
+                />
+              )) : store.filteredProducts.map(product => (
+                <ProductItem
+                    dispatch={dispatch}
+                    foundOnBasket={foundOnBasket}
+                    key={product.id}
+                    onClickProduct={onClickProduct}
+                    onOpenModal={onOpenModal}
+                    product={product}
+                />
+              ))}
+            </div>
+          </ProductList>
+        </Boundary>
+      </section>
+    </>
+  );
+};
+
+export default Home;
+import React, { useState, useEffect, useRef } from 'react';
+import Filters from 'components/ui/Filters';
+
+import {
+  resetFilter,
+  setTextFilter,
+  removeSelectedRecent,
+  clearRecentSearch
+} from 'actions/filterActions';
+
+const Header = ({
+  dispatch,
+  filter,
+  isLoading,
+  products,
+  productsLength,
+  filteredProductsLength,
+  history
+}) => {
+  const [searchInput, setSearchInput] = useState(filter.keyword);
+  const searchbarRef = useRef(null);
+
+  useEffect(() => {
+    setSearchInput(filter.keyword);
+  }, [filter.keyword]);
+
+  useEffect(() => {
+    document.addEventListener('click', watchForClick);
+
+    return () => {
+      document.removeEventListener('click', watchForClick);
+    };
+  }, []);
+
+  const isFiltered = ['keyword', 'brand', 'minPrice', 'maxPrice', 'sortBy'].some(key => !!filter[key]);
+  const isMobile = window.screen.width <= 480;
+
+  const onSearchChange = (e) => {
+    const val = e.target.value.trimStart();
+    setSearchInput(val);
+  };
+
+  const onKeyUp = (e) => {
+    if (e.keyCode === 13 && productsLength !== 0) {
+      dispatch(setTextFilter(searchInput));
+      e.target.blur();
+      searchbarRef.current.classList.remove('is-open-recent-search');
+      isMobile && history.push('/');
+    }
+  };
+
+  const onFocusInput = (e) => {
+    e.target.select();
+    searchbarRef.current.classList.add('is-open-recent-search');
+  };
+
+  const onClickToggle = () => {
+    if (document.body.classList.contains('is-open-filters')) {
+      document.body.classList.remove('is-open-filters');
+    } else {
+      document.body.classList.add('is-open-filters');
+    }
+  };
+
+  const onClickRecentSearch = (keyword) => {
+    dispatch(setTextFilter(keyword));
+    searchbarRef.current.classList.remove('is-open-recent-search');
+  };
+
+  const watchForClick = (e) => {
+    const toggleClosest = e.target.closest('.filters-toggle');
+    const searchbarClosest = e.target.closest('.searchbar-recent');
+    const searchbarInput = e.target.closest('.searchbar-input');
+    const searchBarRemove = e.target.closest('.searchbar-recent-button');
+
+    try {
+      if (!toggleClosest && document.body.classList.contains('is-open-filters')) {
+        document.body.classList.remove('is-open-filters');
+      }
+
+      if (!searchbarClosest && !searchbarInput && !searchBarRemove) {
+        searchbarRef.current.classList.remove('is-open-recent-search');
+      }
+    } catch (e) {}
+  };
+
+  const onClearRecent = () => {
+    dispatch(clearRecentSearch());
+  };
+
+  const onResetFilter = () => {
+    dispatch(resetFilter());
+  };
+
+  return (
+    <>
+      <div className="product-list-header-title">
+        {isFiltered ? (
+          <h3>
+            {filteredProductsLength === 0
+              ? 'No product found'
+              : `Found ${filteredProductsLength} ${filteredProductsLength > 1 ? 'products' : 'product'}`
+            }
+          </h3>
+        ) : null}
+      </div>
+      <div className="product-list-header-actions">
+        {isFiltered && (
+          <button
+              className="button button-muted button-small"
+              onClick={onResetFilter}
+          >
+            Reset Filters
+          </button>
+        )}
+        &nbsp;
+        <div className="filters-toggle">
+            <button
+                className="button button-small button-border button-border-gray"
+                disabled={isLoading}
+                onClick={onClickToggle}
+            >
+              Filters
+              <div className="filters-toggle-caret icon-caret" />
+            </button>
+          <div className="filters-toggle-sub">
+            <Filters
+                dispatch={dispatch}
+                filter={filter}
+                isLoading={isLoading}
+                products={products}
+                productsLength={productsLength}
+            />
+          </div>
+        </div>
+        &nbsp;
+        <div className="searchbar"
+            ref={searchbarRef}
+        >
+          <input
+              className="search-input searchbar-input"
+              onChange={onSearchChange}
+              onFocus={onFocusInput}
+              onKeyUp={onKeyUp}
+              placeholder="Filter products by keyword"
+              readOnly={isLoading}
+              type="text"
+              value={searchInput}
+          />
+          {filter.recent.length !== 0 && (
+            <div className="searchbar-recent">
+              <div className="searchbar-recent-header">
+                <h5>Recent Search</h5>
+                <h5
+                    className="searchbar-recent-clear text-subtle"
+                    onClick={onClearRecent}
+                >
+                  Clear
+                </h5>
+              </div>
+              {filter.recent.map(item => (
+                <div
+                    className="searchbar-recent-wrapper"
+                    key={`search-${item}`}
+                >
+                  <h5
+                      className="searchbar-recent-keyword margin-0"
+                      onClick={() => onClickRecentSearch(item)}
+                  >
+                    {item}
+                  </h5>
+                  <span
+                      className="searchbar-recent-button text-subtle"
+                      onClick={() => dispatch(removeSelectedRecent(item))}
+                  >
+                    X
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="searchbar-icon"
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+          />
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Header;
+\end{lstlisting}
