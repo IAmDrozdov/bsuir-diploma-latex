@@ -76,6 +76,131 @@
     \end{tabular}
 \end{table}
 
+\subsubsection{Разработка моделей приложения}\hfill
+
+Модель является единственным источником информации о данных.
+Она содержит основные поля и поведение данных, которые в ней хранятся.
+Как правило, каждая модель отображается в одну таблицу базы данных.
+Для примера в листинге 4.1 будет представлен определение модели пользователя.
+
+Листинг 4.1 – Определениние модели User
+\begin{lstlisting}
+
+    class User(AbstractUser):
+        class Meta:
+            ordering = ['-created_at']
+
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        name = models.CharField(max_length=128, null=True, blank=True)
+        phone = PhoneNumberField(null=False, blank=False, db_index=True, unique=True)
+        email = models.CharField(max_length=128, null=True, blank=True)
+        fcm_token = models.CharField(max_length=128, null=True, blank=True)
+        created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+        USERNAME_FIELD = 'phone'
+
+        blocked_users = models.ManyToManyField(
+            'users.User',
+            related_name='blocked_by',
+            blank=True,
+        )
+
+        is_blocked = models.BooleanField(default=False)
+
+        def __str__(self):
+            return self.get_full_name() or self.get_username()
+\end{lstlisting}
+
+Согласно сформулированным требованиям к ПО, пользователь должен иметь аватар.
+На примере определения модели аватара пользователя(см листинг 4.2) будет представлено отношение модели <<UserAvatar>> к <<User>>.
+
+Листинг 4.2 – Определениние модели UserAvatar
+\begin{lstlisting}
+    class UserAvatar(models.Model):
+        class Meta:
+            ordering = ('ordering',)
+
+        ALLOWED_PHOTO_EXTENSIONS = ['png', 'jpeg', 'webp', 'jpg', 'jpe']
+        id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+        user = models.ForeignKey(
+            'users.User', on_delete=models.CASCADE, related_name='images', limit_choices_to=10
+        )
+        url = models.CharField(max_length=10, blank=True, null=True)
+
+        @property
+        def image_path_prefix(self):
+            return f'{self.user.pk}'
+
+        def save(self, *args, **kwargs):
+            if not self.extension:
+                self.extension = self.url.split('.')[-1].lower()
+
+            if self.extension not in self.ALLOWED_PHOTO_EXTENSIONS:
+                raise Exception('The photo format %s is not allowed' % self.extension)
+
+            super(UserImage, self).save(*args, **kwargs)
+
+\end{lstlisting}
+
+После определения модели, нужно сообщить Django, что о намерении использовать эти модели.
+Для этого необходимо добавить приложение, в котором реализована данная модель в массив <<INSTALLED\_APPS>> в конфигурациооном файле проекта.
+
+
+\subsubsection{Разработка сериализаторов приложения}\hfill
+
+Модели Django интуитивно представляют данные, хранящиеся в базе, но API должен передавать информацию в менее сложной структуре.
+Хотя данные будут представлены как экземпляры классов Model, их необходимо перевести в формат JSON для передачи через API.
+
+Сериализатор DRF производит это преобразование.
+Когда пользователь передает информацию (например, создание нового экземпляра) через API, сериализатор берет данные, проверяет их и преобразует в нечто, что Django может сложить в экземпляр модели.
+Аналогичным образом, когда пользователь обращается к информации через API, соответствующие экземпляры передаются в сериализатор, который преобразовывает их в формат, который может быть легко передан пользователю как JSON.
+
+Наиболее распространенной формой, которую принимает сериализатор DRF, является тот, который привязан непосредственно к модели Django
+Код сериализатор представлен в листинге 4.3 ниже на примере сериализатора для модели Good.
+
+Листинг 4.3 – Сериализатор модели Good
+\begin{lstlisting}
+    class GoodSerializer(serializers.ModelSerializer):
+        images = GoodImageSerializer(many=True, required=False)
+        class Meta:
+            model = Good
+            fields = (
+                'name',
+                'condition',
+                'description',
+                'can_be_purchased',
+                'price_per_hour',
+                'price_per_day',
+                'own_delivery',
+                'images',
+            )
+\end{lstlisting}
+
+В сериализаторе, для модели Good был использован вложеннный сериализатор для модели GoodImage.
+Настройки fields позволяют точно указать, какие поля доступны этому сериализатору.
+В качестве альтернативы, может быть установлен exclude вместо fields, которое будет включать все поля модели, кроме тех, которые указаны в exclude.
+
+\subsubsection{Разработка представлений приложения}\hfill
+
+Сериализатор анализирует информацию в обоих направлениях (чтение и запись), тогда как ViewSet - это тот код, в котором определены доступные операции.
+Наиболее распространенным ViewSet является ModelViewSet, который имеет следующие встроенные операции:
+\begin{itemize}
+    \item Создание экземпляра: create ();
+    \item Получение / чтение экземпляра: retrieve ();
+    \item Обновление экземпляра (все или только выбранные поля): update () или partial\_update ();
+    \item Уничтожение / Удаление экземпляра: destroy ();
+    \item Список экземпляров (с разбивкой по страницам по умолчанию): list ().
+\end{itemize}
+
+Каждая из этих функций может быть переопределена, если требуется другое поведение, но стандартная функциональность работает с минимальным кодом (см листинг 4.4).
+
+Листинг 4.4 – Представление модели Address
+\begin{lstlisting}
+    class AddressesViewSet(viewsets.ModelViewSet):
+        permission_classes = [permissions.IsAuthenticated]
+        serializer_class = serializers.AddressSerializer
+        queryset = models.Address.objects.all()
+\end{lstlisting}
 
 \subsubsection{Программный интерфейс серверной части}\hfill
 
